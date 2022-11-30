@@ -4,7 +4,9 @@ from ray.rllib.algorithms.maml import MAMLConfig
 from  ray.rllib.examples.env.ant_rand_goal import AntRandGoalEnv
 from  ray.rllib.examples.env.halfcheetah_rand_direc import HalfCheetahRandDirecEnv
 from datetime import datetime
+from ray.tune.stopper import CombinedStopper, TrialPlateauStopper, MaximumIterationStopper
 
+from ray.rllib.examples.env.cartpole_mass import CartPoleMassEnv
 # import warnings
 # warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
@@ -14,44 +16,56 @@ tune.register_env("HalfCheetahRandDirecEnv", lambda env_ctx: env)
 
 config = (MAMLConfig()
             .training(
-                inner_adaptation_steps=4,
+                inner_adaptation_steps=1,
                 maml_optimizer_steps=5,
-                inner_lr=0.1
+                inner_lr=0.1,
+                model={
+                    "fcnet_hiddens": [64, 64],
+                    "free_log_std" : True
+                }
             )
             .framework(framework="torch")
             .resources(num_gpus=1)
             .environment(env="HalfCheetahRandDirecEnv")
-            .rollouts(num_rollout_workers=1,horizon=200)
+            .rollouts(num_rollout_workers=2, horizon=1000, rollout_fragment_length=100)
             .debugging(log_level="ERROR")
+            
 )
 
-algo = config.build()
+# algo = config.build()
 
 
-for i in range(100):
-    print("Iteration: ", i)
-    info = algo.train()
+# for i in range(1000):
+#     print("Iteration: ", i)
+#     info = algo.train()
     
-    metrics = [
-        'adaptation_delta'
-    ]
-    print(" ".join([str(info[m]) for m in metrics]))
+#     metrics = [
+#         'adaptation_delta'
+#     ]
+#     print(" ".join([str(info[m]) for m in metrics]))
+#     print()
 
 
 
-# param_space = config.to_dict()
-# param_space["inner_lr"] = tune.grid_search([0.1, 0.01, 0.001])
-# param_space["inner_adaptation_steps"] = tune.grid_search([1, 2, 4])
+param_space = config.to_dict()
+param_space["inner_lr"] = tune.grid_search([0.01, 0.05, 0.001])
+param_space["inner_adaptation_steps"] = tune.grid_search([2, 4])
+param_space["horizon"] = tune.grid_search([200, 500, 1000, 2000])
 
-# tune.Tuner(  
-#     "MAML",
-#     run_config=air.RunConfig(
-#         stop={"adaptation_delta": 200},
-#         local_dir="./results",
-#         name="maml_test_exp_{}".format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-#     ),
-#     param_space=param_space
-# ).fit()
+tune.Tuner(  
+    "MAML",
+    run_config=air.RunConfig(
+        stop=CombinedStopper(
+            MaximumIterationStopper(max_iter=1000),
+            TrialPlateauStopper("adaptation_delta",  std=10.0)
+        ),
+        # stop={"training_iteration" : 1000},
+        # stop=TrialPlateauStopper("adaptation_delta",  std=10.0),
+        local_dir="./results",
+        name="maml_hyp_search"
+    ),
+    param_space=param_space
+).fit()
 
 
 
