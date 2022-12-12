@@ -249,3 +249,42 @@ tune.Tuner(
 #  'vf_clip_param': 10.0,
 #  'vf_loss_coeff': 0.5,
 #  'vf_share_layers': -1}
+
+
+"""
+Act, obs
+
+Ant
+Box(-1.0, 1.0, (8,), float32)
+(27,)
+env = gym.make("Ant-v3")
+
+Half Cheetah
+
+Box(-1.0, 1.0, (6,), float32)
+(17,)
+env = gym.make("HalfCheetah-v3")
+
+Hopper
+
+Box(-1.0, 1.0, (3,), float32)
+(11,)
+env = gym.make("Hopper-v3")
+
+Swimmer
+Box(-1.0, 1.0, (2,), float32)
+(8,)
+env = gym.make("Swimmer-v3")
+
+Walker2D
+Box(-1.0, 1.0, (6,), float32)
+(17,)
+env = gym.make("Walker2d-v3")
+
+
+
+
+
+
+
+"""
